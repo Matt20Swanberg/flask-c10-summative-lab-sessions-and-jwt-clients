@@ -16,3 +16,6 @@ env/
 *.db
 *.sqlite
 *.sqlite3
+
+# Flask authentication testing
+cookies.txt
