@@ -19,3 +19,7 @@ env/
 
 # Flask authentication testing
 cookies.txt
+
+# Session authentication files
+cookies.txt
+jane_cookies.txt
