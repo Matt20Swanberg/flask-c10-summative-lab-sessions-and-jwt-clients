@@ -59,6 +59,7 @@ function TaskList() {
         </ul>
       )}
 
+    {totalPages > 0 && (
       <div>
         <button
           disabled={page === 1}
@@ -76,6 +77,8 @@ function TaskList() {
           Next
         </button>
       </div>
+    )}
+    
     </div>
   );
 }
