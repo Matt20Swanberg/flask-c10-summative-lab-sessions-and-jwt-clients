@@ -66,7 +66,10 @@ class Login(Resource):
         password = data.get('password')
 
         if not isinstance(username, str) or not isinstance(password, str):
-            return {"message": "Invalid username or password"}, 401
+            return {
+                "message": "Invalid username or password",
+                "errors": ["Invalid username or password"]
+            }, 401
 
         username = username.strip()
 
@@ -78,7 +81,10 @@ class Login(Resource):
 
             return UserSchema().dump(user), 200
 
-        return {'message': 'Invalid username or password'}, 401
+        return {
+            'errors': ['Invalid username or password'],
+            'message': 'Invalid username or password'
+        }, 401
 
 class CheckSession(Resource):
     def get(self):
