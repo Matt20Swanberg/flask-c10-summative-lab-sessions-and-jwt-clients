@@ -1,19 +1,27 @@
 from server.config import app, db, migrate, api
 from server.models import User, Task
-from server.helpers import update_task_fields
+from server.helpers import (
+    get_current_user_id,
+    get_user_task,
+    update_task_fields,
+    require_authentication,
+    get_json_data
+)
 
 from flask import request, session, make_response
 from flask_restful import Resource
 from sqlalchemy.exc import IntegrityError, StatementError
 from server.schemas import UserSchema, TaskSchema
+from werkzeug.exceptions import BadRequest
+
+@app.errorhandler(BadRequest)
+def handle_bad_request(error):
+    return {'message': error.description}, 400
 
 class Signup(Resource):
 
     def post(self):
-        data = request.get_json(silent=True)
-
-        if not isinstance(data, dict):
-            return {"message": "A JSON object is required"}, 400
+        data = get_json_data()
 
         username = data.get("username")
         password = data.get("password")
@@ -52,10 +60,7 @@ class Signup(Resource):
 class Login(Resource):
     def post(self):
 
-        data = request.get_json(silent=True)
-        
-        if not isinstance(data, dict):
-            return {"message": "A JSON object is required"}, 400
+        data = get_json_data()
 
         username = data.get('username')
         password = data.get('password')
@@ -77,7 +82,7 @@ class Login(Resource):
 
 class CheckSession(Resource):
     def get(self):
-        user_id = session.get('user_id')
+        user_id = get_current_user_id()
 
         if user_id:
             user = User.query.filter(User.id == user_id).first()
@@ -87,20 +92,16 @@ class CheckSession(Resource):
 
         return {"message": "Unauthorized access"}, 401
 
-
 class Logout(Resource):
     def delete(self):
         session.pop('user_id', None)
         return '', 204
 
-
 class Tasks(Resource):
+    @require_authentication
     def get(self):
         
-        user_id = session.get('user_id')
-
-        if not user_id:
-            return {'message': 'User not authenticated'}, 401
+        user_id = get_current_user_id()
         
         page = request.args.get("page", type=int)
         per_page = request.args.get("per_page", type=int)
@@ -139,17 +140,11 @@ class Tasks(Resource):
 
         return response_data, 200
     
-
+    @require_authentication
     def post(self):
-        user_id = session.get('user_id')
-        
-        if not user_id:
-            return {'message': 'User not authenticated'}, 401
+        user_id = get_current_user_id()
 
-        data = request.get_json(silent=True)
-
-        if not isinstance(data, dict):
-            return {'message': 'A JSON object is required'}, 400
+        data = get_json_data()
 
         title = data.get('title')
         description = data.get('description')
@@ -173,7 +168,7 @@ class Tasks(Resource):
             task_json = TaskSchema().dump(new_task)
             return task_json, 201
 
-        except IntegrityError:
+        except (IntegrityError, StatementError):
             db.session.rollback()
             return {"message": "Unable to create task"}, 422
 
@@ -182,17 +177,12 @@ class Tasks(Resource):
             return {"message": str(error)}, 422
 
 class TaskById(Resource):
+    @require_authentication
     def get(self, id):
 
-        user_id = session.get('user_id')
+        user_id = get_current_user_id()
 
-        if not user_id:
-            return {'message': 'User not authenticated'}, 401
-
-        task = Task.query.filter(
-            Task.id == id,
-            Task.user_id == user_id
-        ).first()
+        task = get_user_task(id, user_id)
 
         if not task:
             return {'message': 'Task not found'}, 404
@@ -201,25 +191,16 @@ class TaskById(Resource):
         
         return task_json, 200        
 
-
+    @require_authentication
     def patch(self, id):
-        user_id = session.get('user_id')
-        
-        if not user_id:
-            return {'message': 'User not authenticated'}, 401
+        user_id = get_current_user_id()
 
-        task = Task.query.filter(
-            Task.id == id,
-            Task.user_id == user_id
-        ).first()
+        task = get_user_task(id, user_id)
 
         if not task:
             return {'message': 'Task not found'}, 404
 
-        data = request.get_json(silent=True)
-
-        if not isinstance(data, dict):
-            return {'message': 'A JSON object is required'}, 400
+        data = get_json_data()
 
         try:
             update_task_fields(task, data)
@@ -236,16 +217,11 @@ class TaskById(Resource):
             db.session.rollback()
             return {'message': 'Unable to update task'}, 422
 
+    @require_authentication
     def delete(self, id):
-        user_id = session.get('user_id')
+        user_id = get_current_user_id()
 
-        if not user_id:
-            return {'message': 'User not authenticated'}, 401
-
-        task = Task.query.filter(
-            Task.id == id,
-            Task.user_id == user_id
-        ).first()
+        task = get_user_task(id, user_id)
 
         if not task:
             return {'message': 'Task not found'}, 404
