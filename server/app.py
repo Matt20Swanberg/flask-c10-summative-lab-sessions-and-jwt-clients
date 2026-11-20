@@ -96,17 +96,49 @@ class Logout(Resource):
 
 class Tasks(Resource):
     def get(self):
-
+        
         user_id = session.get('user_id')
 
         if not user_id:
             return {'message': 'User not authenticated'}, 401
+        
+        page = request.args.get("page", type=int)
+        per_page = request.args.get("per_page", type=int)
 
-        tasks = Task.query.filter(Task.user_id == user_id).all()
+        if 'page' not in request.args:
+            page = 1
 
-        task_json = TaskSchema(many=True).dump(tasks)
+        if 'per_page' not in request.args:
+            per_page = 5
 
-        return task_json
+        if (
+            page is None
+            or per_page is None
+            or page < 1 
+            or per_page < 1
+        ):
+            return {'message': 'Page and per_page must be positive integers'}, 400
+
+        pagination = Task.query.filter(
+            Task.user_id == user_id
+            ).order_by(Task.id).paginate(
+                page=page,
+                per_page=per_page,
+                error_out=False
+            )
+
+        tasks = TaskSchema(many=True).dump(pagination.items)
+
+        response_data = {
+            "page": pagination.page,
+            "per_page": pagination.per_page,
+            "total": pagination.total,
+            "total_pages": pagination.pages,
+            "items": tasks,
+        }
+
+        return response_data, 200
+    
 
     def post(self):
         user_id = session.get('user_id')
