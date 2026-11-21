@@ -84,8 +84,14 @@ def test_signup_rejects_invalid_input(client, payload, status):
     assert client.post('/signup', json=payload).status_code == status
 
 
-    login(client)
-    assert client.get('/tasks/99999').status_code == 401
+def test_get_task_requires_authentication(client):
+    """
+    Verify that unauthenticated users cannot access
+    individual tasks through the API.
+    """
+    response = client.get('/tasks/99999')
+
+    assert response.status_code == 401
 
 
 # Updates and deletion

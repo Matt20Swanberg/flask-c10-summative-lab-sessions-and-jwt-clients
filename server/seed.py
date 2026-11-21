@@ -1,17 +1,18 @@
 """
-Seed the database with sample users and tasks.
+Seed the database with sample users and tasks
 
 Creates three development users with hashed passwords and ensures
-each user has five tasks with randomized statuses and priorities.
+each user has five tasks with randomized statuses and priorities
 
 The script can be rerun without duplicating existing users or
-adding tasks beyond the five-task target.
+adding tasks beyond the five-task target
 """
 
 from faker import Faker
 
 from server.config import app, db
 from server.models import User, Task
+
 
 # Initialize Faker to generate sample task content
 fake = Faker()
@@ -23,6 +24,7 @@ PRIORITY_OPTIONS = ['low', 'medium', 'high']
 
 # Number of tasks to create for each development user
 TASKS_PER_USER = 5
+
 
 with app.app_context():
 
@@ -59,12 +61,12 @@ with app.app_context():
     for user in users:
 
         # Add tasks until the user has five total
-        while len(user.tasks) < 5:
+        while len(user.tasks) < TASKS_PER_USER:
             task = Task(
                 title=fake.sentence(nb_words=5),
                 description=fake.paragraph(nb_sentences=2),
-                status=fake.random_element(elements=status_options),
-                priority=fake.random_element(elements=priority_options),
+                status=fake.random_element(elements=STATUS_OPTIONS),
+                priority=fake.random_element(elements=PRIORITY_OPTIONS),
             )
 
             # Associate the task with its owner
