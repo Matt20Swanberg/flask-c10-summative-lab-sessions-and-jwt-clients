@@ -45,12 +45,17 @@ class Signup(Resource):
 
         username = data.get("username")
         password = data.get("password")
+        password_confirmation = data.get("password_confirmation")
 
         try:
             if not isinstance(username, str) or not username.strip():
                 raise ValueError("Username cannot be empty")
             if not isinstance(password, str) or not password.strip():
                 raise ValueError("Password cannot be empty")
+
+            # Ensure the password confirmation matches before creating the user
+            if password != password_confirmation:
+                raise ValueError("Passwords do not match")
 
             username = username.strip()
 

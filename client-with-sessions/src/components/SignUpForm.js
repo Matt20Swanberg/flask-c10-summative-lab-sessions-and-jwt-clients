@@ -9,10 +9,18 @@ function SignUpForm({ onLogin }) {
   const [isLoading, setIsLoading] = useState(false);
 
   function handleSubmit(e) {
-    e.preventDefault();
-    setErrors([]);
-    setIsLoading(true);
-    fetch("/signup", {
+  e.preventDefault();
+  setErrors([]);
+
+  // Prevent signup if the passwords do not match
+  if (password !== passwordConfirmation) {
+    setErrors(["Passwords do not match"]);
+    return;
+  }
+
+  setIsLoading(true);
+
+  fetch("/signup", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
